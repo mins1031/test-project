@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="kr.min.mapper.BrandMapper">
+      <!-- (
+               select /*+INDEX_DESC(tbl_brand pk_brand)*/
+                rownum rn, bno, name,style ,content,price
+                from
+                 tbl_brand
+                 where 
+                 ]]>
+                   AND style LIKE '%미니멀%' OR content LIKE '%미니멀%'
+            <include refid="criteria"></include>       
+                   
+         <![CDATA[
+                 rownum <= #{pageNum} * #{amount}
+             )
+             where rn > (#{pageNum}-1) * #{amount}
+         ]]>  -->
+     <sql id="criteria">
+       <trim prefix="(" suffix=")" prefixOverrides="OR">
+         <foreach item='type' collection="typeArr">
+           <trim prefix="OR">
+             <choose>
+               <when test="type == 'N'.toString()">
+                 name like ('%',${keyword},'%')
+               </when>
+               <when test="type == 'C'.toString()">
+                 content like ('%',${keyword},'%')
+               </when>
+               <when test="type == 'S'.toString()">
+                 style like ('%',${keyword},'%')
+               </when>
+               <when test="type == 'P'.toString()">
+                 price like ('%',${keyword},'%')
+               </when>
+             </choose>
+            </trim>
+          </foreach>
+         </trim>
+     </sql>
+     <sql id ="new">
+      <trim  prefixOverrides="OR">
+       <foreach item='type' collection="typeArr">
+        <if test="type == 'N'.toString()">
+           name LIKE CONCAT('%',#{keyword},'%')
+        </if>
+        <if test="type == 'S'.toString()">
+           style LIKE CONCAT('%',${keyword},'%')
+        </if>
+        <if test="type == 'C'.toString()">
+           content LIKE CONCAT('%',#{keyword},'%')
+        </if>
+        <if test="type == 'P'.toString()">
+           price LIKE CONCAT('%',#{keyword},'%')
+        </if>
+        <if test="type == 'NS'.toString()">
+           ( name LIKE CONCAT('%',#{keyword},'%')
+               OR style LIKE CONCAT('%',#{keyword},'%')
+               )
+        </if>
+        <if test="type == 'NC'.toString()">
+           ( name LIKE CONCAT('%',#{keyword},'%')
+               OR content LIKE CONCAT('%',#{keyword},'%')
+               )
+        </if>
+        <if test="type == 'NP'.toString()">
+           ( name LIKE CONCAT('%',#{keyword},'%')
+               OR price LIKE CONCAT('%',#{keyword},'%')
+               )
+        </if>
+        <if test="type == 'SC'.toString()">
+           ( style LIKE CONCAT('%',${keyword},'%')
+               OR content LIKE CONCAT('%',${keyword},'%')
+               )
+        </if>
+        <if test="type == 'SP'.toString()">
+           ( style LIKE CONCAT('%',#{keyword},'%')
+               OR price LIKE CONCAT('%',#{keyword},'%')
+               )
+        </if>
+        <if test="type == 'CP'.toString()">
+           ( content LIKE CONCAT('%',#{keyword},'%')
+               OR price LIKE CONCAT('%',#{keyword},'%')
+               )
+        </if>
+         <if test="type == 'NCS'.toString()">
+           ( name LIKE CONCAT('%',#{keyword},'%')
+               OR content LIKE CONCAT('%',#{keyword},'%')
+               OR style LIKE CONCAT('%',#{keyword},'%')
+               )
+        </if>
+        <if test="type == 'NCP'.toString()">
+           ( name LIKE CONCAT('%',#{keyword},'%')
+               OR content LIKE CONCAT('%',#{keyword},'%')
+               OR price LIKE CONCAT('%',#{keyword},'%')
+               )
+        </if>
+        <if test="type == 'CSP'.toString()">
+           ( content LIKE CONCAT('%',#{keyword},'%')
+               OR style LIKE CONCAT('%',#{keyword},'%')
+               OR price LIKE CONCAT('%',#{keyword},'%')
+               )
+        </if>
+        <if test="type == 'NSP'.toString()">
+           ( name LIKE CONCAT('%',#{keyword},'%')
+               OR style LIKE CONCAT('%',#{keyword},'%')
+               OR price LIKE CONCAT('%',#{keyword},'%')
+               )
+        </if>
+        <if test="type == 'NSCP'.toString()">
+           ( name LIKE CONCAT('%',#{keyword},'%')
+               OR style LIKE CONCAT('%',#{keyword},'%')
+               OR content LIKE CONCAT('%',#{keyword},'%')
+               OR price LIKE CONCAT('%',#{keyword},'%')
+               )
+        </if>
+        </foreach>
+        </trim>
+     </sql> 
+     <select id="getList" resultType="kr.min.domain.Brand"><!-- resultType은 select쿼리 결과를 특정클래스의 객체로 만들기위해 설정 -->
+         <![CDATA[
+         select * from tbl_brand where bno >0
+         ]]>
+     </select>
+     
+     <select id="getListWithPaging" resultType="kr.min.domain.Brand">
+          <![CDATA[
+           select 
+             bno,name,style,content,price,regdate,updateDate,replyCnt
+           from
+             tbl_brand               
+           where 
+           ]]>
+           <include refid="criteria"></include>
+            <![CDATA[
+            bno > 0   
+           order by           
+             bno desc             
+           limit ${(pageNum-1)*amount},${amount}
+            ]]>
+     </select>
+     
+     <insert id="insert">
+        insert into tbl_brand (name,style,content,price)
+        values (#{name},#{style},#{content},#{price})
+     </insert>
+     
+     <insert id="insertSelectKey">
+        <!-- <selectKey keyProperty="bno" order="BEFORE" resultType="long">
+          select seq_brand.nextval from dual  
+        </selectKey> --> <!-- 결국 bno를 자동으로 하나씩늘리는 연산을 담은 dual 테이블로 만들어 사용한다는 이야기. 그리고 그걸 키프로퍼티인 'bno'에 long타입으로 담는 느낌?-->
+       insert into tbl_brand (name,style,content,price)
+       values (#{name},#{style},#{content},#{price})
+     </insert>
+     
+     <select id="read" resultType="kr.min.domain.Brand">
+        select * from tbl_brand where bno = #{bno} <!-- mapper인페에 파라미터로 전달된 bno 값이 들어오고 그값으로 #{bno} 값넣어줌 -->
+     </select>
+     
+     <delete id="delete">
+          delete from tbl_brand where bno = #{bno}
+     </delete>
+     
+     <update id="update">
+         update tbl_brand
+          set name= #{name},
+              style=#{style},
+              content = #{content},
+              price = #{price},
+              updateDate = current_timestamp
+          where bno = #{bno} 
+     </update><!-- #{} 같은 경우 파라미터로 전달된 Brand 객체의 getXXX메서드를 호출해 파라미터 처리함-->
+     
+     <update id="updateReplyCnt">
+        update tbl_brand 
+        set replyCnt = replyCnt + #{amount} where bno = #{bno}
+     </update>
+      
+     <select id="getTotalCount" resultType="int">
+       select count(*) from tbl_brand 
+       where 
+       <include refid="criteria"></include> 
+       bno > 0
+     </select>
+  </mapper>
